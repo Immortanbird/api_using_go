@@ -1,68 +1,39 @@
 package config
 
 import (
-	"fmt"
 	"log"
-	"strings"
+	"os"
 
-	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/viper"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
-func Init(cfg string, cfgPaths ...string) error {
-	if cfg != "" {
-		// Load the configuration file.
-		i := strings.LastIndex(cfg, ".")
-		viper.SetConfigName(cfg[:i])
-		viper.SetConfigType(cfg[i+1:])
-	} else {
-		// Load the default configuration file.
-		viper.SetConfigFile("./config/config.json")
+func LoadEnv() {
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
-
-	for _, path := range cfgPaths {
-		viper.AddConfigPath(path)
-		viper.AddConfigPath(".")
-	}
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-			viper.SetConfigFile("config.yml")
-			return viper.ReadInConfig()
-		} else {
-			// Config file was found but another error was produced
-			return err
-		}
-	}
-
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
-	})
-	viper.WatchConfig()
-
-	return nil
 }
 
-func OpenDB() (*gorm.DB, error) {
-	conf := viper.GetStringMap("db")
+func LoadLogger() {
+	var logger *zap.Logger
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-		conf["user"],
-		conf["password"],
-		conf["host"],
-		conf["port"],
-		conf["database"],
-	)
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Panic(err)
+	switch os.Getenv("mode") {
+	case "debug":
+		logger, _ = zap.NewDevelopment()
+	case "test":
+		logger = zap.NewExample()
+	case "release":
+		logger, _ = zap.NewProduction()
+	default:
+		panic("Mode unknown. Available mode: debug release test")
 	}
 
-	log.Println("Database connected.")
+	defer logger.Sync()
 
-	return db, nil
+	// Replace the global logger, so that it can be used elsewhere
+	defer zap.ReplaceGlobals(logger)
+
+	zap.L().Info("logger created", zap.String("sugar", "no"))
 }
