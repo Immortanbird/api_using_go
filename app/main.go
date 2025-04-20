@@ -1,8 +1,11 @@
 package main
 
 import (
+	"log"
+
 	"github.com/Immortanbird/api_using_go/config"
 	"github.com/Immortanbird/api_using_go/handler"
+	"github.com/joho/godotenv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -10,6 +13,14 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+func init() {
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
 
 func main() {
 	config.Init("config.json", "json", "./config")
