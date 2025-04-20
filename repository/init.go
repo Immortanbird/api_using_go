@@ -2,30 +2,30 @@ package repository
 
 import (
 	"fmt"
-	"log"
+	"os"
 
-	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func OpenDB() (*gorm.DB, error) {
-	conf := viper.GetStringMap("db")
+var db *gorm.DB
 
+func OpenDB() *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-		conf["user"],
-		conf["password"],
-		conf["host"],
-		conf["port"],
-		conf["database"],
+		os.Getenv("db.user"),
+		os.Getenv("db.pwd"),
+		os.Getenv("db.host"),
+		os.Getenv("db.port"),
+		os.Getenv("db.name"),
 	)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Panic(err)
+		zap.L().Panic("Failed to connect to database.")
 	}
 
-	log.Println("Database connected.")
+	zap.L().Info("Database connected.")
 
-	return db, nil
+	return db
 }
