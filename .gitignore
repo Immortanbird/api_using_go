@@ -22,8 +22,5 @@ go.work
 go.work.sum
 *.code-workspace
 
-# env file
-.env
-
 # mac
 .DS_Store
