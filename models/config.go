@@ -1,4 +1,4 @@
-package repository
+package models
 
 import (
 	"fmt"
@@ -23,8 +23,16 @@ func OpenDB() {
 	var err error
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		zap.L().Panic("Failed to connect to database.")
+		zap.L().Panic("Failed to connect to database: " + err.Error())
 	}
 
 	zap.L().Info("Database connected.")
+}
+
+func Migrate() {
+	err := db.AutoMigrate(&User{})
+
+	if err != nil {
+		zap.L().Panic("Database migration failed: " + err.Error())
+	}
 }

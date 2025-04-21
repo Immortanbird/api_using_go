@@ -30,10 +30,8 @@ func LoadLogger() {
 		panic("Mode unknown. Available mode: debug release test")
 	}
 
-	defer logger.Sync()
-
 	// Replace the global logger, so that it can be used elsewhere
-	defer zap.ReplaceGlobals(logger)
+	zap.ReplaceGlobals(logger)
 
-	zap.L().Info("logger created", zap.String("sugar", "no"))
+	zap.L().Info("Logger created:", zap.String("sugar", "no"))
 }

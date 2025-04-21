@@ -18,6 +18,7 @@ func Load(g *gin.Engine, mw ...gin.HandlerFunc) {
 		c.String(http.StatusNotFound, "The incorrect API route.")
 	})
 
+	// Self check (starting with "/check/...")
 	group := g.Group("/check")
 	{
 		group.GET("/ping", Ping)
