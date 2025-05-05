@@ -1,4 +1,4 @@
-package models
+package database
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
+var DB *gorm.DB
 
 func OpenDB() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
@@ -21,18 +21,10 @@ func OpenDB() {
 	)
 
 	var err error
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		zap.L().Panic("Failed to connect to database: " + err.Error())
 	}
 
 	zap.L().Info("Database connected.")
-}
-
-func Migrate() {
-	err := db.AutoMigrate(&User{})
-
-	if err != nil {
-		zap.L().Panic("Database migration failed: " + err.Error())
-	}
 }

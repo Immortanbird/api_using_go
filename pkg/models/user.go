@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"time"
+
+	"github.com/Immortanbird/api_using_go/internal/database"
 )
 
 type User struct {
@@ -19,14 +21,14 @@ type User struct {
 
 func InsertUser(user *User) (int64, error) {
 	// Insert a new user
-	result := db.Create(user)
+	result := database.DB.Create(user)
 
 	return result.RowsAffected, result.Error
 }
 
 func FindUsers(user *User) ([]User, error) {
 	var users []User
-	result := db.Find(users)
+	result := database.DB.Find(users)
 
 	return users, result.Error
 }
