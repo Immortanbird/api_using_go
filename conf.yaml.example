@@ -1,0 +1,24 @@
+# app configuration
+app:
+  name: apiserver
+  mode: debug
+  addr: localhost
+  port: 12000
+
+# check configuration
+check:
+  max_ping_count: 10
+
+# database configuration
+db:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  pwd: "qwe123456"
+  name: api_using_go
+
+# JWT configuration
+jwt:
+  secret_key: "my_secret_key"
+  refresh_lifespan: 84400
+  access_lifespan: 900

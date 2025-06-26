@@ -1,31 +1,77 @@
 package config
 
 import (
-	"log"
-	"os"
+	"fmt"
 
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
-func LoadEnv() {
-	err := godotenv.Load()
-
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+type Config struct {
+	App   AppConfig   `mapstructure:"app"`
+	Check CheckConfig `mapstructure:"check"`
+	DB    DBConfig    `mapstructure:"db"`
+	JWT   JWTConfig   `mapstructure:"jwt"`
 }
 
-func LoadLogger() {
+type AppConfig struct {
+	Name string `mapstructure:"name"`
+	Mode string `mapstructure:"mode"`
+	Addr string `mapstructure:"addr"`
+	Port string `mapstructure:"port"`
+}
+
+type CheckConfig struct {
+	MaxPingCount int `mapstructure:"max_ping_count"`
+}
+
+type DBConfig struct {
+	Host string `mapstructure:"host"`
+	Port string `mapstructure:"port"`
+	User string `mapstructure:"user"`
+	Pwd  string `mapstructure:"pwd"`
+	Name string `mapstructure:"name"`
+}
+
+type JWTConfig struct {
+	SecretKey  string `mapstructure:"secret_key"`
+	ExpRefresh int    `mapstructure:"refresh_lifespan"`
+	ExpAccess  int    `mapstructure:"access_lifespan"`
+}
+
+func LoadConfig() *Config {
+	// Load environment variables
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("fatal error reading config: %w", err))
+	}
+
+	var config *Config
+	err = viper.Unmarshal(config)
+	if err != nil {
+		panic(fmt.Errorf("fatal error unmarshalling config: %w", err))
+	}
+
+	// Create logger
 	var logger *zap.Logger
 
-	switch os.Getenv("mode") {
+	switch viper.GetString("app.mode") {
 	case "debug":
-		logger, _ = zap.NewDevelopment()
+		logger, err = zap.NewDevelopment()
+		if err != nil {
+			panic(fmt.Errorf("fatal error creating logger: %w", err))
+		}
 	case "test":
 		logger = zap.NewExample()
 	case "release":
-		logger, _ = zap.NewProduction()
+		logger, err = zap.NewProduction()
+		if err != nil {
+			panic(fmt.Errorf("fatal error creating logger: %w", err))
+		}
 	default:
 		panic("Mode unknown. Available mode: debug release test")
 	}
@@ -34,4 +80,6 @@ func LoadLogger() {
 	zap.ReplaceGlobals(logger)
 
 	zap.L().Info("Logger created:", zap.String("sugar", "no"))
+
+	return config
 }
