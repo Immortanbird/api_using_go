@@ -12,7 +12,16 @@ type TokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID string, lifespan int, jwtSecretKey string) (string, error) {
+type TokenDetails struct {
+	Token     string
+	JTI       string
+	ExpiresAt time.Time
+}
+
+func GenerateToken(userID string, lifespan int, jwtSecretKey string) (TokenDetails, error) {
+	details := TokenDetails{}
+
+	jti := uuid.NewString()
 	iat := time.Now()
 	exp := iat.Add(time.Duration(lifespan) * time.Second)
 
@@ -32,7 +41,7 @@ func GenerateToken(userID string, lifespan int, jwtSecretKey string) (string, er
 			Subject: userID,
 
 			// Set the JWT ID.
-			ID: uuid.NewString(),
+			ID: jti,
 		},
 	}
 
@@ -44,11 +53,15 @@ func GenerateToken(userID string, lifespan int, jwtSecretKey string) (string, er
 	tokenString, err := token.SignedString(jwtSecretKey)
 	if err != nil {
 		// If there's an error during signing, we return it.
-		return "", err
+		return details, err
 	}
 
+	details.Token = tokenString
+	details.JTI = jti
+	details.ExpiresAt = exp
+
 	// Return the signed token string.
-	return tokenString, nil
+	return details, nil
 }
 
 func ParseToken(tokenString string, jwtSecretKey string) (*TokenClaims, error) {

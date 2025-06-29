@@ -71,7 +71,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	// Fetch user from database by email
+	// Fetch user from database
 	var user *models.Users
 	if payload.Email != "" {
 		var err error
@@ -106,6 +106,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	// Wrong password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)); err != nil {
 		zap.L().Warn(
 			"Password mismatch during login",
@@ -118,6 +119,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	// Generate access and refresh tokens
 	accessToken, err := utils.GenerateToken(user.ID.String(), h.Config.JWT.ExpAccess, h.Config.JWT.SecretKey)
 	if err != nil {
 		zap.L().Warn(
@@ -129,7 +131,6 @@ func (h *Handler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token."})
 		return
 	}
-
 	refreshToken, err := utils.GenerateToken(user.ID.String(), h.Config.JWT.ExpRefresh, h.Config.JWT.SecretKey)
 	if err != nil {
 		zap.L().Warn(
@@ -142,8 +143,31 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("access_token", accessToken, h.Config.JWT.ExpAccess, "/", "", true, true)
-	c.SetCookie("refresh_token", refreshToken, h.Config.JWT.ExpRefresh, "/", "", true, true)
+	// Save the refresh token in the database
+	err = crud.CreateRefreshToken(&models.RefreshToken{
+		UserID:    user.ID,
+		TokenJTI:  refreshToken.JTI,
+		IsRevoked: false,
+		IPAddress: c.ClientIP(),
+		UserAgent: c.Request.UserAgent(),
+		ExpiresAt: refreshToken.ExpiresAt,
+	})
+	if err != nil {
+		zap.L().Warn(
+			"Failed to create refresh token in the database",
+			zap.Error(err),
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("path", c.Request.URL.Path),
+			zap.String("user_id", user.ID.String()),
+			zap.String("refresh_token_jti", refreshToken.JTI),
+		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token."})
+		return
+	}
+
+	c.SetCookie("access_token", accessToken.Token, h.Config.JWT.ExpAccess, "/", "", true, true)
+	c.SetCookie("refresh_token", refreshToken.Token, h.Config.JWT.ExpRefresh, "/", "", true, true)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
 	})
@@ -152,10 +176,9 @@ func (h *Handler) Login(c *gin.Context) {
 // POST	/auth/refresh
 func (h *Handler) Refresh(c *gin.Context) {
 	tokenString, err := c.Cookie("refresh_token")
-
 	if err != nil {
 		zap.L().Warn(
-			"No token found in the cookie.",
+			"No refresh token found in the cookie.",
 			zap.Error(err),
 			zap.String("path", c.Request.URL.Path),
 			zap.String("client_ip", c.ClientIP()),
@@ -175,11 +198,32 @@ func (h *Handler) Refresh(c *gin.Context) {
 		return
 	}
 
-	if crud.FindRefreshToken() {
-
+	token, err := crud.FindRefreshToken(models.RefreshToken{TokenJTI: claims.ID})
+	if err != nil || token.IsRevoked {
+		zap.L().Warn(
+			"Failed to find refresh token in the database",
+			zap.Error(err),
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("path", c.Request.URL.Path),
+			zap.String("user_id", claims.UserID),
+		)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Invalid refresh token."})
+		return
 	}
 
-	accessToken, err := utils.GenerateToken(claims.UserID, h.Config.JWT.ExpAccess, h.Config.JWT.SecretKey)
+	// Generate new access and refresh tokens
+	accessToken, err := utils.GenerateToken(token.UserID.String(), h.Config.JWT.ExpAccess, h.Config.JWT.SecretKey)
+	if err != nil {
+		zap.L().Warn(
+			"Failed to generate token",
+			zap.Error(err),
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("path", c.Request.URL.Path),
+		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token."})
+		return
+	}
+	refreshToken, err := utils.GenerateToken(token.UserID.String(), h.Config.JWT.ExpRefresh, h.Config.JWT.SecretKey)
 	if err != nil {
 		zap.L().Warn(
 			"Failed to generate token",
@@ -191,21 +235,30 @@ func (h *Handler) Refresh(c *gin.Context) {
 		return
 	}
 
-	refreshToken, err := utils.GenerateToken(claims.UserID, h.Config.JWT.ExpRefresh, h.Config.JWT.SecretKey)
-	if err != nil {
-		zap.L().Warn(
-			"Failed to generate token",
-			zap.Error(err),
-			zap.String("client_ip", c.ClientIP()),
-			zap.String("path", c.Request.URL.Path),
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token."})
-		return
-	}
-
-	c.SetCookie("access_token", accessToken, h.Config.JWT.ExpAccess, "/", "", false, true)
-	c.SetCookie("refresh_token", refreshToken, h.Config.JWT.ExpRefresh, "/", "", false, true)
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Login successful",
+	// Save the refresh token in the database
+	err = crud.CreateRefreshToken(&models.RefreshToken{
+		UserID:    token.UserID,
+		TokenJTI:  refreshToken.JTI,
+		IsRevoked: false,
+		IPAddress: c.ClientIP(),
+		UserAgent: c.Request.UserAgent(),
+		ExpiresAt: refreshToken.ExpiresAt,
 	})
+	if err != nil {
+		zap.L().Warn(
+			"Failed to create refresh token in the database",
+			zap.Error(err),
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("path", c.Request.URL.Path),
+			zap.String("user_id", token.UserID.String()),
+			zap.String("refresh_token_jti", refreshToken.JTI),
+		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token."})
+		return
+	}
+
+	c.SetCookie("access_token", accessToken.Token, h.Config.JWT.ExpAccess, "/", "", false, true)
+	c.SetCookie("refresh_token", refreshToken.Token, h.Config.JWT.ExpRefresh, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Token refreshed."})
 }

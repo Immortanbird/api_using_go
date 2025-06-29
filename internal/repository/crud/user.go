@@ -7,11 +7,7 @@ import (
 func CreateUser(user *models.Users) error {
 	result := db.Create(user)
 
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
+	return result.Error
 }
 
 func FindTheUser(filter models.Users) (*models.Users, error) {
