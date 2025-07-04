@@ -45,12 +45,13 @@ func setRouting(g *gin.Engine, config *config.Config) {
 	handler := handler.Handler{Config: config}
 
 	unprotected := g.Group("")
-	unprotected.POST("/auth/login", handler.Login)
-	unprotected.POST("/auth/register", handler.Register)
+	unprotected.POST("/login", handler.Login)
+	unprotected.POST("/register", handler.Register)
 	unprotected.POST("/auth/refresh", handler.Refresh)
 
 	// Auth routes (starting with "/auth/...")
 	protected := g.Group("")
+	protected.DELETE("/user/delete", handler.DeleteAccount)
 
 	// Define your CORS configuration
 	g.Use(cors.New(cors.Config{

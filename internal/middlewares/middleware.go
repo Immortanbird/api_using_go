@@ -6,6 +6,8 @@ import (
 	"github.com/Immortanbird/api_using_go/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Middleware struct {
@@ -30,7 +32,19 @@ func (mw *Middleware) Authenticate(c *gin.Context) {
 		return
 	}
 
-	c.Set("userID", claims.UserID)
+	userID, err := uuid.Parse(claims.ID)
+
+	if err != nil {
+		zap.L().Error(
+			"Unable to parse user ID",
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("path", c.Request.URL.Path),
+		)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Internal Server Error."})
+		return
+	}
+
+	c.Set("userID", userID)
 
 	c.Next()
 }

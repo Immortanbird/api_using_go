@@ -2,6 +2,7 @@ package crud
 
 import (
 	"github.com/Immortanbird/api_using_go/internal/models"
+	"github.com/google/uuid"
 )
 
 func CreateUser(user *models.Users) error {
@@ -36,5 +37,8 @@ func UpdateUser() {
 
 }
 
-func DeleteUser() {
+func DeleteUser(userID uuid.UUID) error {
+	reuslt := db.Delete(models.Users{}, userID)
+
+	return reuslt.Error
 }
