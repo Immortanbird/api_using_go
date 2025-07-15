@@ -36,3 +36,42 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   	`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+CREATE TABLE posts (
+    -- The unique identifier for each post, using UUID.
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    -- Foreign key linking the post to an author in the `users` table.
+    -- If a user is deleted, all their posts will be deleted automatically.
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- The title of the blog post.
+    title VARCHAR(255) NOT NULL,
+
+    -- A URL-friendly version of the title (e.g., "my-first-post").
+    -- This should be unique to prevent duplicate URLs.
+    slug TEXT NOT NULL UNIQUE,
+
+    -- A short summary or excerpt of the post, can be used for previews.
+    excerpt TEXT,
+
+    -- The main content of the post, stored as Markdown or HTML.
+    -- TEXT type allows for very long articles.
+    content TEXT NOT NULL,
+
+    -- The URL of a cover image for the post.
+    cover_image_url VARCHAR(255),
+
+    -- The publication status of the post (e.g., 'draft', 'published', 'archived').
+    -- This allows you to save posts without making them public immediately.
+    status VARCHAR(50) NOT NULL DEFAULT 'draft',
+
+    -- Timestamps for when the post was created and last updated.
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Create indexes on commonly queried columns for better performance.
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_slug ON posts(slug);
+CREATE INDEX idx_posts_status ON posts(status);
