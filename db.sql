@@ -14,7 +14,7 @@ CREATE TABLE refresh_tokens (
     expires_at TIMESTAMP NOT NULL,
 
     -- The timestamp when this record was created.
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- (Optional but Recommended) Additional metadata for session management.
     ip_address TEXT,
@@ -32,5 +32,18 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`tel` VARCHAR(32),
     `verified` BOOLEAN DEFAULT FALSE,
 	`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  	`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  	`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE images (
+    `id` BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID(), 1)),
+    `user_id` BINARY(16) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    `original_filename` TEXT NOT NULL,
+    `hashed_filename` TEXT NOT NULL UNIQUE,
+    `image_url` TEXT NOT NULL UNIQUE,
+    `download_url` TEXT NOT NULL UNIQUE,
+    `size_bytes` BIGINT NOT NULL,
+    `mime_type` VARCHAR(128) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -22,3 +22,8 @@ jwt:
   secret_key: "my_secret_key"
   refresh_lifespan: 84400
   access_lifespan: 900
+
+# GitHub Picture Bed
+pic_bed:
+  github_token="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"
+  github_url_format="https://api.github.com/repos/Immortanbird/picture-bed/contents/%s"
