@@ -23,7 +23,7 @@ go.work.sum
 *.code-workspace
 
 # env
-conf.yaml
+config.yaml
 
 # mac
 .DS_Store
