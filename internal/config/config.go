@@ -56,7 +56,7 @@ func LoadConfig() *Config {
 		panic(fmt.Errorf("fatal error reading config: %w", err))
 	}
 
-	var config *Config
+	config := &Config{}
 	err = viper.Unmarshal(config)
 	if err != nil {
 		panic(fmt.Errorf("fatal error unmarshalling config: %w", err))
