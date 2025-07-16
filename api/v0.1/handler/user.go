@@ -176,27 +176,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 // DELETE /user/delete
 func (h *Handler) DeleteAccount(c *gin.Context) {
-	value, exists := c.Get("userID")
-	if !exists {
-		zap.L().Error(
-			"CRITICAL: userID not found in context for a protected route.",
-			zap.String("client_ip", c.ClientIP()),
-			zap.String("path", c.Request.URL.Path),
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error."})
-		return
-	}
-
-	userID, ok := value.(uuid.UUID)
-	if !ok {
-		zap.L().Error(
-			"CRITICAL: userID in context is not of type uuid.UUID.",
-			zap.String("client_ip", c.ClientIP()),
-			zap.String("path", c.Request.URL.Path),
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error."})
-		return
-	}
+	userID := c.MustGet("userID").(uuid.UUID)
 
 	if err := crud.DeleteUser(userID); err != nil {
 		zap.L().Error(

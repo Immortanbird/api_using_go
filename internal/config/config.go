@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	App   AppConfig   `mapstructure:"app"`
-	Check CheckConfig `mapstructure:"check"`
-	DB    DBConfig    `mapstructure:"db"`
-	JWT   JWTConfig   `mapstructure:"jwt"`
+	App    AppConfig    `mapstructure:"app"`
+	Check  CheckConfig  `mapstructure:"check"`
+	DB     DBConfig     `mapstructure:"db"`
+	JWT    JWTConfig    `mapstructure:"jwt"`
+	PicBed PicBedConfig `mapstructure:"pic_bed"`
 }
 
 type AppConfig struct {
@@ -37,6 +38,11 @@ type JWTConfig struct {
 	SecretKey  string `mapstructure:"secret_key"`
 	ExpRefresh int    `mapstructure:"refresh_lifespan"`
 	ExpAccess  int    `mapstructure:"access_lifespan"`
+}
+
+type PicBedConfig struct {
+	GitHubToken     string `mapstructure:"github_token"`
+	GitHubUrlFormat string `mapstructure:"github_url_format"`
 }
 
 func LoadConfig() *Config {

@@ -7,8 +7,8 @@ import (
 )
 
 type RefreshToken struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	UserID    uuid.UUID `gorm:"type:uuid;not null"`
+	ID        uuid.UUID `gorm:"type:binary(16);primary_key;default:(UUID_TO_BIN(UUID(), 1))"`
+	UserID    uuid.UUID `gorm:"type:binary(16);not null;constraint:OnDelete:CASCADE"`
 	TokenJTI  string    `gorm:"not null;unique"`
 	IsRevoked bool      `gorm:"not null;default:false"`
 	IPAddress string
