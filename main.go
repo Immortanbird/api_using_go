@@ -33,13 +33,13 @@ func setRouting(g *gin.Engine, config *config.Config) {
 	})
 
 	// Self check (starting with "/check/...")
-	group := g.Group("/check")
+	healthCheckRouters := g.Group("/check")
 	{
-		group.GET("/ping", handler.Ping)
-		group.GET("/health", handler.HealthCheck)
-		group.GET("/cpu", handler.CPUCheck)
-		group.GET("/ram", handler.RamCheck)
-		group.GET("/disk", handler.DiskCheck)
+		healthCheckRouters.GET("/ping", handler.Ping)
+		healthCheckRouters.GET("/health", handler.HealthCheck)
+		healthCheckRouters.GET("/cpu", handler.CPUCheck)
+		healthCheckRouters.GET("/ram", handler.RamCheck)
+		healthCheckRouters.GET("/disk", handler.DiskCheck)
 	}
 
 	handler := handler.Handler{Config: config}
@@ -47,11 +47,20 @@ func setRouting(g *gin.Engine, config *config.Config) {
 	unprotected := g.Group("")
 	unprotected.POST("/login", handler.Login)
 	unprotected.POST("/register", handler.Register)
-	unprotected.POST("/auth/refresh", handler.Refresh)
+	unprotected.POST("/refresh-token", handler.Refresh)
 
 	// Auth routes (starting with "/auth/...")
-	protected := g.Group("")
-	protected.DELETE("/user/delete", handler.DeleteAccount)
+	userRouters := g.Group("")
+	userRouters.DELETE("/user/delete", handler.DeleteAccount)
+
+	imageRouters := g.Group("")
+	imageRouters.POST("/image/upload", handler.UploadImage)
+	imageRouters.GET("/image/download", handler.DownloadImage)
+	imageRouters.DELETE("/image/delete", handler.DeleteImage)
+
+	mw := middlewares.Middleware{JWTSecretKey: (*config).JWT.SecretKey}
+	userRouters.Use(mw.Authenticate)
+	imageRouters.Use(mw.Authenticate)
 
 	// Define your CORS configuration
 	g.Use(cors.New(cors.Config{
@@ -67,9 +76,6 @@ func setRouting(g *gin.Engine, config *config.Config) {
 		MaxAge: 12 * time.Hour, // How long the results of a preflight request can be cached
 	}))
 	g.Use(gin.Recovery())
-
-	mw := middlewares.Middleware{JWTSecretKey: (*config).JWT.SecretKey}
-	protected.Use(mw.Authenticate)
 
 	zap.L().Info("Routing configured.")
 }
