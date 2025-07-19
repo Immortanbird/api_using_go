@@ -21,7 +21,7 @@ CREATE TABLE refresh_tokens (
     user_agent TEXT
 );
 
-CREATE TABLE IF NOT EXISTS `users` (
+CREATE TABLE `users` (
 	`id` BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID(), 1)),
 	`user_name` VARCHAR(20) NOT NULL UNIQUE,
 	`email` VARCHAR(128) NOT NULL UNIQUE,
