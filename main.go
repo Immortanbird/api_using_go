@@ -45,18 +45,25 @@ func setRouting(g *gin.Engine, config *config.Config) {
 	handler := handler.Handler{Config: config}
 
 	unprotected := g.Group("")
-	unprotected.POST("/login", handler.Login)
-	unprotected.POST("/register", handler.Register)
-	unprotected.POST("/refresh-token", handler.Refresh)
+	{
+		unprotected.POST("/login", handler.Login)
+		unprotected.POST("/register", handler.Register)
+		unprotected.POST("/refresh-token", handler.Refresh)
+	}
 
 	// Auth routes (starting with "/auth/...")
 	userRouters := g.Group("")
 	userRouters.DELETE("/user/delete", handler.DeleteAccount)
 
-	imageRouters := g.Group("")
-	imageRouters.POST("/image/upload", handler.UploadImage)
-	imageRouters.GET("/image/download", handler.DownloadImage)
-	imageRouters.DELETE("/image/delete", handler.DeleteImage)
+	imageRouters := g.Group("/image")
+	{
+		imageRouters.POST("/upload", handler.UploadImage)
+		imageRouters.GET("/download", handler.DownloadImage)
+		imageRouters.DELETE("/delete", handler.DeleteImage)
+	}
+
+	downloadRouters := g.Group("")
+	downloadRouters.GET("/download/file", handler.DownloadHandler)
 
 	mw := middlewares.Middleware{JWTSecretKey: (*config).JWT.SecretKey}
 	userRouters.Use(mw.Authenticate)

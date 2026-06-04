@@ -69,7 +69,7 @@ func (h *Handler) UploadImage(c *gin.Context) {
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		zap.L().Error(
-			"Failed to generate hashed image name.",
+			"Failed to read file content.",
 			zap.Error(err),
 			zap.String("client_ip", c.ClientIP()),
 			zap.String("path", c.Request.URL.Path),
